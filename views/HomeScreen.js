@@ -1,43 +1,72 @@
-import { useEffect, useState } from "react"
-import { View, ScrollView, Text, Pressable, TextInput, Alert } from "react-native"
+import { useState, useEffect } from "react"
+import { View, ScrollView, Pressable, Image } from "react-native"
+import * as ImagePicker from "expo-image-picker"
 import { ButtonText } from "../components/Typography"
-import { setData } from "../hooks/storage"
+import axios from "axios"
 
 export default function HomeScreen({ navigation }) {
-	const [data, setData] = useState([])
-	const [name, setName] = useState("")
+	const [image, setImage] = useState("")
+	const [media, setMedia] = useState([])
 
-	useEffect(() => {
-		fetch("https://pokeapi.co/api/v2/pokemon")
-			.then(response => response.json())
-			.then(json => setData(json))
-	}, [])
+	useEffect(function() {
+		axios.get("http://10.160.220.40:1337/api/v1/media")
+			.then(response => setMedia(response.data))
+	}, [image])
 
-	function saveDataHandler() {
-		setData("@MyAppStore:name", name)
-		Alert.alert("Saved", name)
+	async function pickImage() {
+		try {
+			let result = await ImagePicker.launchImageLibraryAsync({
+				mediaTypes: ImagePicker.MediaTypeOptions.All,
+				allowsEditing: true,
+				aspect: [4, 3],
+				quality: 1,
+			})
+			console.log(result)
+			if (!result.canceled) {
+				setImage(result.assets[0].uri)
+			}
+
+			console.log(image)
+			const splitArray = image.split("/")
+
+			const name = splitArray[splitArray.length - 1]
+			const mimeType = name.split(".")[1]
+
+			const imageData = {
+				uri: image,
+				type: `image/${mimeType}`,
+				name: name
+			}
+
+			console.log(imageData)
+
+			const data = new FormData()
+			data.append("file", imageData)
+
+			axios.post("http://10.160.220.40:1337/api/v1/media", data, {
+				headers: {
+					'Content-Type': 'multipart/form-data'
+				}
+			})
+				.then(response => console.log(response.status))
+				.catch(error => console.log(error))
+		} catch (error) {
+			console.log(error)
+		}
+
 	}
 
 	return (
-		<View style={{flex:1, padding:16 }}>
+		<View style={{ flex: 1, padding: 16 }}>
 			<View>
-				<TextInput
-					placeholder="Din far"
-					
-					onChange={event => setName(event.nativeEvent.text)} />
-				<Pressable onPress={saveDataHandler}>
-					<Text>Save</Text>
-				</Pressable>
-				<Pressable onPress={()=>navigation.navigate("Details", { title: "ditto" })}>
-					<Text>Details</Text>
+				<Pressable
+					style={{ padding: 16, backgroundColor: "lightgrey" }}
+					onPress={pickImage}>
+					<ButtonText>Upload</ButtonText>
 				</Pressable>
 			</View>
 			<ScrollView>
-				{data.results && data.results.map((item, index) => (
-					<Pressable key={index} onPress={()=> navigation.navigate("Details", { title: item.name })}>
-						<ButtonText>{item.name}</ButtonText>
-					</Pressable>
-				))}
+				{media.map((item, i) => <Image key={i} resizeMode="cover" style={{width: 400, height: 300}} source={{uri: "http://10.160.220.40:1337/" + item.filename}} />)}
 			</ScrollView>
 		</View>
 	)

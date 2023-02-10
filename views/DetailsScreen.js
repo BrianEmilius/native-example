@@ -2,12 +2,10 @@ import { View, Image, Text } from 'react-native'
 import { useEffect, useState } from 'react'
 import { DataTable } from 'react-native-paper'
 import { Heading } from '../components/Typography'
-import { getData } from '../hooks/storage'
 
 export default function DetailsScreen({ route }) {
 	const { title } = route.params
 	const [data, setData] = useState({})
-	const { data: name, error } = getData("@MyAppStore:name")
 
 	useEffect(() => {
 		fetch(`https://pokeapi.co/api/v2/pokemon/${title}`)
@@ -19,9 +17,6 @@ export default function DetailsScreen({ route }) {
 	return (
 		<View style={{flex:1, padding:16}}>
 			<Image style={{width:300,height:200}} resizeMode="contain" source={{uri: data.sprites?.other["official-artwork"].front_default}} />
-			<View>
-				<Text>{name}</Text>
-			</View>
 			<DataTable>
 				<DataTable.Header>
 					<DataTable.Title>Stat</DataTable.Title>
